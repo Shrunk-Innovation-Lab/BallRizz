@@ -2,8 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- iOS optimization meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NXTPlay AFL Football Designer</title>
+    <title>AFL Football Preview – Panels, Decals, Ball Wrap & Save View</title>
     <!-- Favicon using the logo image -->
     <link rel="icon" type="image/png" href="https://i.imgur.com/lIOr2wQ.png" />
     <!-- (Optional) dat.GUI can be loaded if needed -->
@@ -50,11 +53,7 @@
         border-radius: 8px;
         font-family: sans-serif;
         max-width: 300px;
-        max-height: 90vh;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+        /* Remove fixed max-height to allow scaling */
       }
       /* Uniform input styling */
       #controls-panel input[type="text"],
@@ -86,6 +85,7 @@
         background: rgba(255, 255, 255, 0.6);
         padding: 6px;
         border-radius: 6px;
+        margin-bottom: 8px;
       }
       .control-group h3 {
         margin: 0 0 4px 0;
@@ -122,6 +122,27 @@
         position: absolute;
         bottom: 0;
         width: 100%;
+      }
+      /* Responsive Scaling for Smaller Screens */
+      @media (max-width: 600px) {
+        #controls-panel {
+          width: 90vw;
+          max-width: 90vw;
+          font-size: 12px;
+          padding: 5px;
+        }
+        #controls-panel input,
+        #controls-panel button,
+        #controls-panel label.button {
+          padding: 4px 8px;
+          font-size: 12px;
+        }
+      }
+      @media (max-height: 500px) {
+        #controls-panel {
+          transform: scale(0.85);
+          transform-origin: bottom right;
+        }
       }
     </style>
   </head>
@@ -173,6 +194,7 @@
         <input type="number" id="decalDepth" value="1" step="0.1" />
         <label>Decal Lateral Offset:</label>
         <input type="number" id="decalLateralOffset" value="1" step="0.1" />
+        <button id="updateDecals">Update Decals</button>
         <button id="clearDecal">Clear Decal</button>
       </div>
       <!-- Save View Button -->
@@ -236,7 +258,7 @@
         let dorsalSeamCurve = null;
         let originalPositions = null;
         
-        // --- Fixed Dimensions.
+        // --- Fixed Dimensions for the Ball.
         const ballWidth = 1.5;
         const ballHeight = 0.9;
         
@@ -407,13 +429,13 @@
             const eyeletGeom = new THREE.TorusGeometry(0.001, 0.025, 16, 32);
             const startEyelet = new THREE.Mesh(eyeletGeom, eyeletMaterial);
             startEyelet.position.copy(start);
-            startEyelet.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), ellipsoidNormal(start));
+            startEyelet.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ellipsoidNormal(start));
             startEyelet.renderOrder = 12;
             scene.add(startEyelet);
             laceMeshes.push(startEyelet);
             const endEyelet = new THREE.Mesh(eyeletGeom.clone(), eyeletMaterial);
             endEyelet.position.copy(end);
-            endEyelet.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), ellipsoidNormal(end));
+            endEyelet.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ellipsoidNormal(end));
             endEyelet.renderOrder = 12;
             scene.add(endEyelet);
             laceMeshes.push(endEyelet);
@@ -425,7 +447,7 @@
           const valveGeo = new THREE.CylinderGeometry(valveParams.radius, valveParams.radius, valveParams.height, 32);
           valveMesh = new THREE.Mesh(valveGeo, valveMaterial);
           valveMesh.position.copy(valvePos);
-          valveMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), n_valve);
+          valveMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n_valve);
           valveMesh.renderOrder = 12;
           scene.add(valveMesh);
         }
@@ -441,7 +463,6 @@
             console.log("Decal image not set.");
             return;
           }
-          // Use the same decal image for both sides.
           const maxSize = parseFloat(document.getElementById("decalMaxSize").value) || 0.8;
           const decalDepth = parseFloat(document.getElementById("decalDepth").value) || 1;
           const lateralOffset = parseFloat(document.getElementById("decalLateralOffset").value) || 1;
@@ -461,7 +482,7 @@
           function projectEllip(q) {
             const sx = q.x / ballWidth, sy = q.y / ballHeight, sz = q.z / ballHeight;
             const len = Math.sqrt(sx*sx + sy*sy + sz*sz);
-            if (len < 1e-6) return new THREE.Vector3(0,0,0);
+            if(len < 1e-6) return new THREE.Vector3(0,0,0);
             return new THREE.Vector3((sx/len)*ballWidth, (sy/len)*ballHeight, (sz/len)*ballHeight);
           }
           const leftPos = projectEllip(leftPosCandidate);
@@ -477,7 +498,6 @@
           rightObj.lookAt(rightPos.clone().add(rightPos.clone().normalize()));
           const rightQuat = rightObj.quaternion.clone();
           
-          // Use the same decal image for both sides.
           const leftImg = leftDecalData.img;
           const leftScale = maxSize / Math.max(leftImg.naturalWidth, leftImg.naturalHeight);
           let leftDecalWidth = leftImg.naturalWidth * leftScale;
@@ -516,7 +536,7 @@
           // Remove the temporary target.
           scene.remove(targetMesh);
         }
-        // Automatically update decals upon decal upload.
+        // Automatically update decals as soon as a decal image is uploaded.
         safeAddEventListener("decalUpload", "change", function(e) {
           const file = e.target.files[0];
           if (!file) return;
@@ -533,6 +553,8 @@
             };
           };
           reader.readAsDataURL(file);
+          // Clear the file input so same file can be re-uploaded.
+          e.target.value = "";
         });
         safeAddEventListener("updateDecals", "click", function() {
           applyDecals();
