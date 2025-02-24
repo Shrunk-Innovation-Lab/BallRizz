@@ -4,12 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AFL Football Preview – Panels, Decals, Ball Wrap & Save View</title>
+    <!-- Favicon using the logo image -->
+    <link rel="icon" type="image/png" href="https://i.imgur.com/lIOr2wQ.png" />
     <!-- (Optional) dat.GUI can be loaded if needed -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
     <style>
       body {
         margin: 0;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
       }
       /* Header with Logo */
       #header {
@@ -106,6 +111,18 @@
         border-radius: 5px;
         cursor: pointer;
       }
+      /* Footer Styling */
+      .footer {
+        text-align: center;
+        font-family: sans-serif;
+        font-size: 12px;
+        color: #666;
+        padding: 10px;
+        background: #f0f0f0;
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+      }
     </style>
   </head>
   <body>
@@ -123,6 +140,7 @@
       <div class="control-group">
         <h3>Ball Color</h3>
         <input type="text" id="colorInput" placeholder="Enter #hex color" value="#ffffff" />
+        <button id="clearColor">Clear Color</button>
       </div>
       <!-- Panel Uploads -->
       <div class="control-group" id="patch-group">
@@ -144,21 +162,18 @@
         <input type="file" id="ballWrapUpload" accept="image/*" />
         <button id="clearBallWrap">Clear Ball Wrap</button>
       </div>
-      <!-- Decals Uploads & Controls -->
+      <!-- Decals: Single Upload for Both Sides -->
       <div class="control-group" id="decal-group">
         <h3>Decals</h3>
-        <label for="decalLeftUpload" class="button">Left Decal</label>
-        <input type="file" id="decalLeftUpload" accept="image/*" />
-        <label for="decalRightUpload" class="button">Right Decal</label>
-        <input type="file" id="decalRightUpload" accept="image/*" />
+        <label for="decalUpload" class="button">Upload Decal</label>
+        <input type="file" id="decalUpload" accept="image/*" />
         <label>Decal Max Size (units):</label>
         <input type="number" id="decalMaxSize" value="0.8" step="0.1" />
         <label>Decal Depth:</label>
         <input type="number" id="decalDepth" value="1" step="0.1" />
         <label>Decal Lateral Offset:</label>
         <input type="number" id="decalLateralOffset" value="1" step="0.1" />
-        <button id="updateDecals">Update Decals</button>
-        <button id="clearDecals">Clear Decals</button>
+        <button id="clearDecal">Clear Decal</button>
       </div>
       <!-- Save View Button -->
       <div class="control-group">
@@ -169,6 +184,11 @@
       <input type="file" id="textureUpload" accept="image/*" />
       <input type="file" id="laceSideUpload" accept="image/*" multiple />
     </div>
+    
+    <!-- Footer -->
+    <footer class="footer">
+      © 2025 NXTPlay Worldwide Pty Ltd | All Rights Reserved
+    </footer>
     
     <!-- Include Three.js, OrbitControls, DecalGeometry, ParametricGeometry -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
@@ -211,20 +231,19 @@
         scene.add(dirLight);
         
         // Global Variables.
-        let leftDecalData = null, rightDecalData = null;
+        let leftDecalData = null;
         let panelMaterials = [], panelMeshes = [];
         let dorsalSeamCurve = null;
         let originalPositions = null;
         
-        // --- Define Fixed Dimensions for the Ball ---
-        // These values are used for the panels and decal projection.
+        // --- Fixed Dimensions.
         const ballWidth = 1.5;
         const ballHeight = 0.9;
         
-        // --- Define valveParams (used in lacing) ---
+        // --- valveParams.
         const valveParams = { radius: 0.03, height: 0.02, extrusion: 0.02 };
         
-        // --- Helper Function: ellipsoidNormal ---
+        // --- Helper Function: ellipsoidNormal.
         function ellipsoidNormal(p) {
           const nx = p.x / (ballWidth * ballWidth);
           const ny = p.y / (ballHeight * ballHeight);
@@ -232,7 +251,7 @@
           return new THREE.Vector3(nx, ny, nz).normalize();
         }
         
-        // --- Helper Function: updateCylindricalUV_X ---
+        // --- Helper Function: updateCylindricalUV_X.
         function updateCylindricalUV_X(geometry) {
           const uvAttr = geometry.attributes.uv;
           const posAttr = geometry.attributes.position;
@@ -250,7 +269,7 @@
           uvAttr.needsUpdate = true;
         }
         
-        // ----- Create 4 Panels using ParametricGeometry -----
+        // --- Create 4 Panels using ParametricGeometry.
         const resolutionU = 32, resolutionV = 32;
         function ballPatch(u, v, target, phiStart, phiEnd) {
           const uMapped = 0.001 + 0.998 * u;
@@ -319,7 +338,7 @@
         safeAddEventListener("colorInput", "input", updatePanelColors);
         safeAddEventListener("colorInput", "change", updatePanelColors);
         
-        // ----- Create Hidden Ball Geometry for Decal Projection -----
+        // --- Create Hidden Ball Geometry for Decal Projection.
         function createBallGeometry() {
           const geo = new THREE.SphereGeometry(1, 64, 64);
           geo.scale(ballWidth, ballHeight, ballHeight);
@@ -328,7 +347,7 @@
         }
         const footballGeometry = createBallGeometry();
         
-        // ----- Dorsal Seam & Laces -----
+        // --- Dorsal Seam & Laces.
         function updateDorsalSeamCurve() {
           const seamCount = 50;
           const pts = [];
@@ -346,7 +365,7 @@
         }
         updateDorsalSeamCurve();
         
-        // --- Define Lacing Materials and Globals ---
+        // --- Lacing Materials and Functions.
         const laceMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
         const eyeletMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
         const valveMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
@@ -363,7 +382,6 @@
           clearLaces();
           clearValve();
           if (!dorsalSeamCurve) return;
-          // Fixed lace parameters: 6 laces, length=0.25, spacing=0.03, arch=-0.03.
           for (let i = 0; i < 6; i++) {
             const t = 0.5 + (i - 2.5) * 0.03;
             const tC = Math.min(Math.max(t, 0.05), 0.95);
@@ -389,13 +407,13 @@
             const eyeletGeom = new THREE.TorusGeometry(0.001, 0.025, 16, 32);
             const startEyelet = new THREE.Mesh(eyeletGeom, eyeletMaterial);
             startEyelet.position.copy(start);
-            startEyelet.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ellipsoidNormal(start));
+            startEyelet.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), ellipsoidNormal(start));
             startEyelet.renderOrder = 12;
             scene.add(startEyelet);
             laceMeshes.push(startEyelet);
             const endEyelet = new THREE.Mesh(eyeletGeom.clone(), eyeletMaterial);
             endEyelet.position.copy(end);
-            endEyelet.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ellipsoidNormal(end));
+            endEyelet.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), ellipsoidNormal(end));
             endEyelet.renderOrder = 12;
             scene.add(endEyelet);
             laceMeshes.push(endEyelet);
@@ -407,31 +425,31 @@
           const valveGeo = new THREE.CylinderGeometry(valveParams.radius, valveParams.radius, valveParams.height, 32);
           valveMesh = new THREE.Mesh(valveGeo, valveMaterial);
           valveMesh.position.copy(valvePos);
-          valveMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n_valve);
+          valveMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), n_valve);
           valveMesh.renderOrder = 12;
           scene.add(valveMesh);
         }
         updateLaces();
         
-        // ----- Decals -----
+        // --- Decals.
+        // Use a single decal upload for both sides.
         let laceSideLeftMesh = null, laceSideRightMesh = null;
         function applyDecals() {
           if (laceSideLeftMesh) { scene.remove(laceSideLeftMesh); laceSideLeftMesh = null; }
           if (laceSideRightMesh) { scene.remove(laceSideRightMesh); laceSideRightMesh = null; }
-          if (!leftDecalData && rightDecalData) { leftDecalData = rightDecalData; }
-          else if (!rightDecalData && leftDecalData) { rightDecalData = leftDecalData; }
-          if (!leftDecalData || !rightDecalData) {
-            console.log("Decal images not set.");
+          if (!leftDecalData) {
+            console.log("Decal image not set.");
             return;
           }
+          // Use the same decal image for both sides.
           const maxSize = parseFloat(document.getElementById("decalMaxSize").value) || 0.8;
           const decalDepth = parseFloat(document.getElementById("decalDepth").value) || 1;
           const lateralOffset = parseFloat(document.getElementById("decalLateralOffset").value) || 1;
           
           const seamPts = [
-            new THREE.Vector3(-1.5, 0, 0),
-            new THREE.Vector3(0, 0.9, 0),
-            new THREE.Vector3(1.5, 0, 0)
+            new THREE.Vector3(-ballWidth, 0, 0),
+            new THREE.Vector3(0, ballHeight, 0),
+            new THREE.Vector3(ballWidth, 0, 0)
           ];
           const seamCurve = new THREE.CatmullRomCurve3(seamPts);
           const center = seamCurve.getPoint(0.5);
@@ -441,10 +459,10 @@
           const leftPosCandidate = center.clone().sub(lateralVec.clone().multiplyScalar(lateralOffset));
           const rightPosCandidate = center.clone().add(lateralVec.clone().multiplyScalar(lateralOffset));
           function projectEllip(q) {
-            const sx = q.x / 1.5, sy = q.y / 0.9, sz = q.z / 0.9;
+            const sx = q.x / ballWidth, sy = q.y / ballHeight, sz = q.z / ballHeight;
             const len = Math.sqrt(sx*sx + sy*sy + sz*sz);
-            if(len < 1e-6) return new THREE.Vector3(0,0,0);
-            return new THREE.Vector3((sx/len)*1.5, (sy/len)*0.9, (sz/len)*0.9);
+            if (len < 1e-6) return new THREE.Vector3(0,0,0);
+            return new THREE.Vector3((sx/len)*ballWidth, (sy/len)*ballHeight, (sz/len)*ballHeight);
           }
           const leftPos = projectEllip(leftPosCandidate);
           const rightPos = projectEllip(rightPosCandidate);
@@ -459,27 +477,27 @@
           rightObj.lookAt(rightPos.clone().add(rightPos.clone().normalize()));
           const rightQuat = rightObj.quaternion.clone();
           
+          // Use the same decal image for both sides.
           const leftImg = leftDecalData.img;
-          const rightImg = rightDecalData.img;
           const leftScale = maxSize / Math.max(leftImg.naturalWidth, leftImg.naturalHeight);
           let leftDecalWidth = leftImg.naturalWidth * leftScale;
           let leftDecalHeight = leftImg.naturalHeight * leftScale;
           const leftDecalSize = new THREE.Vector3(leftDecalWidth, leftDecalHeight, decalDepth);
           
-          const rightScale = maxSize / Math.max(rightImg.naturalWidth, rightImg.naturalHeight);
-          let rightDecalWidth = rightImg.naturalWidth * rightScale;
-          let rightDecalHeight = rightImg.naturalHeight * rightScale;
-          rightDecalWidth = -rightDecalWidth; // Flip horizontally.
+          // For the right side, flip horizontally.
+          let rightDecalWidth = leftImg.naturalWidth * leftScale;
+          let rightDecalHeight = leftImg.naturalHeight * leftScale;
+          rightDecalWidth = -rightDecalWidth;
           const rightDecalSize = new THREE.Vector3(rightDecalWidth, rightDecalHeight, decalDepth);
           
-          // Create a fresh decal target mesh from the current ball geometry.
+          // Create a fresh target mesh from the current ball geometry.
           const targetMesh = new THREE.Mesh(createBallGeometry(), new THREE.MeshBasicMaterial({ visible: false }));
           scene.add(targetMesh);
           
           const leftDecalGeom = new THREE.DecalGeometry(targetMesh, leftPos, leftQuat, leftDecalSize);
           const rightDecalGeom = new THREE.DecalGeometry(targetMesh, rightPos, rightQuat, rightDecalSize);
           
-          const leftMat = new THREE.MeshStandardMaterial({
+          const decalMat = new THREE.MeshStandardMaterial({
             map: leftDecalData.texture,
             transparent: true,
             depthTest: true,
@@ -488,17 +506,8 @@
             polygonOffsetFactor: -4,
             side: THREE.DoubleSide
           });
-          const rightMat = new THREE.MeshStandardMaterial({
-            map: rightDecalData.texture,
-            transparent: true,
-            depthTest: true,
-            depthWrite: false,
-            polygonOffset: true,
-            polygonOffsetFactor: -4,
-            side: THREE.DoubleSide
-          });
-          laceSideLeftMesh = new THREE.Mesh(leftDecalGeom, leftMat);
-          laceSideRightMesh = new THREE.Mesh(rightDecalGeom, rightMat);
+          laceSideLeftMesh = new THREE.Mesh(leftDecalGeom, decalMat);
+          laceSideRightMesh = new THREE.Mesh(rightDecalGeom, decalMat);
           laceSideLeftMesh.renderOrder = 50;
           laceSideRightMesh.renderOrder = 50;
           scene.add(laceSideLeftMesh);
@@ -507,42 +516,66 @@
           // Remove the temporary target.
           scene.remove(targetMesh);
         }
+        // Automatically update decals upon decal upload.
+        safeAddEventListener("decalUpload", "change", function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            const img = new Image();
+            img.src = evt.target.result;
+            img.onload = function() {
+              const tex = new THREE.Texture(img);
+              tex.needsUpdate = true;
+              leftDecalData = { texture: tex, img: img };
+              // Immediately apply decals.
+              applyDecals();
+            };
+          };
+          reader.readAsDataURL(file);
+        });
         safeAddEventListener("updateDecals", "click", function() {
           applyDecals();
         });
         
-        // ----- Clear Decals Button Handler -----
-        safeAddEventListener("clearDecals", "click", function() {
+        // ----- Clear Decal Button Handler -----
+        safeAddEventListener("clearDecal", "click", function() {
           if (laceSideLeftMesh) { scene.remove(laceSideLeftMesh); laceSideLeftMesh = null; }
           if (laceSideRightMesh) { scene.remove(laceSideRightMesh); laceSideRightMesh = null; }
           leftDecalData = null;
-          rightDecalData = null;
         });
         
-        // ----- Decal Upload Handlers -----
-        function setupDecalUpload(elementId, side) {
-          safeAddEventListener(elementId, "change", function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-              const img = new Image();
-              img.src = evt.target.result;
-              img.onload = function() {
-                const tex = new THREE.Texture(img);
-                tex.needsUpdate = true;
-                if (side === "left") {
-                  leftDecalData = { texture: tex, img: img };
-                } else if (side === "right") {
-                  rightDecalData = { texture: tex, img: img };
-                }
-              };
-            };
-            reader.readAsDataURL(file);
+        // ----- "Clear Color" Button Handler -----
+        safeAddEventListener("clearColor", "click", function() {
+          const colorInput = document.getElementById("colorInput");
+          colorInput.value = "#ffffff";
+          updatePanelColors();
+        });
+        
+        // ----- Clear All Button Handler -----
+        safeAddEventListener("clear-button", "click", function() {
+          // Clear panel textures.
+          panelMaterials.forEach(mat => {
+            if (mat.map) {
+              mat.map.dispose();
+              mat.map = null;
+            }
+            mat.color.set("#ffffff");
+            mat.needsUpdate = true;
           });
-        }
-        setupDecalUpload("decalLeftUpload", "left");
-        setupDecalUpload("decalRightUpload", "right");
+          // Clear decals.
+          if (laceSideLeftMesh) { scene.remove(laceSideLeftMesh); laceSideLeftMesh = null; }
+          if (laceSideRightMesh) { scene.remove(laceSideRightMesh); laceSideRightMesh = null; }
+          leftDecalData = null;
+          // Clear ball wrap input.
+          const wrapInput = document.getElementById("ballWrapUpload");
+          if (wrapInput) wrapInput.value = "";
+          // Clear panel upload inputs.
+          document.getElementById("patch1Upload").value = "";
+          document.getElementById("patch2Upload").value = "";
+          document.getElementById("patch3Upload").value = "";
+          document.getElementById("patch4Upload").value = "";
+        });
         
         // ----- Ball Wrap Handlers (for a single image wrap across the whole ball) -----
         safeAddEventListener("ballWrapUpload", "change", function(e) {
