@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- iOS optimization meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AFL Football Preview – Panels, Decals, Ball Wrap & Save View</title>
+    <!-- Favicon using the logo image -->
+    <link rel="icon" type="image/png" href="https://i.imgur.com/lIOr2wQ.png" />
+    <!-- (Optional) dat.GUI can be loaded if needed -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      /* Header with Logo */
+      #header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        pointer-events: none;
+      }
+      .logo {
+        position: absolute;
+        top: 10px;
+        left: 700px;
+        width: 300px;
+        height: auto;
+        pointer-events: auto;
+      }
+      @media (max-width: 768px) {
+        .logo {
+          top: 10px;
+          left: 10px;
+          width: 150px;
+        }
+      }
+      /* Unified Control Panel */
+      #controls-panel {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        z-index: 20;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 10px;
+        border-radius: 8px;
+        font-family: sans-serif;
+        max-width: 300px;
+      }
+      /* Uniform input styling */
+      #controls-panel input[type="text"],
+      #controls-panel input[type="number"] {
+        width: 100%;
+        padding: 6px 10px;
+        margin: 4px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      #controls-panel button,
+      #controls-panel label.button {
+        display: inline-block;
+        padding: 8px 12px;
+        margin: 4px 2px;
+        background-color: #007AFF;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        text-align: center;
+      }
+      /* Specific button colors */
+      #clear-button { background-color: #000; }
+      /* Grouping sections */
+      .control-group {
+        background: rgba(255, 255, 255, 0.6);
+        padding: 6px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+      }
+      .control-group h3 {
+        margin: 0 0 4px 0;
+        font-size: 14px;
+      }
+      .control-group label {
+        display: block;
+        font-size: 13px;
+        margin: 4px 0 2px 0;
+      }
+      /* Hide file inputs */
+      input[type="file"] { display: none; }
+      /* Toggle Controls Button */
+      #toggle-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 30;
+        padding: 5px 10px;
+        background: #007AFF;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      /* Footer Styling */
+      .footer {
+        text-align: center;
+        font-family: sans-serif;
+        font-size: 12px;
+        color: #666;
+        padding: 10px;
+        background: #f0f0f0;
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+      }
+      /* Responsive Scaling for Smaller Screens */
+      @media (max-width: 600px) {
+        #controls-panel {
+          width: 90vw;
+          max-width: 90vw;
+          font-size: 12px;
+          padding: 5px;
+        }
+        #controls-panel input,
+        #controls-panel button,
+        #controls-panel label.button {
+          padding: 4px 8px;
+          font-size: 12px;
+        }
+      }
+      @media (max-height: 500px) {
+        #controls-panel {
+          transform: scale(0.85);
+          transform-origin: bottom right;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header with Logo -->
+    <header id="header">
+      <img src="https://i.imgur.com/lIOr2wQ.png" alt="Logo" class="logo" />
+    </header>
+    
+    <!-- Toggle Controls Button -->
+    <button id="toggle-controls">Hide Controls</button>
+    
+    <!-- Unified Control Panel -->
+    <div id="controls-panel">
+      <!-- Ball Color -->
+      <div class="control-group">
+        <h3>Ball Color</h3>
+        <input type="text" id="colorInput" placeholder="Enter #hex color" value="#ffffff" />
+        <button id="clearColor">Clear Color</button>
+      </div>
+      <!-- Panel Uploads -->
+      <div class="control-group" id="patch-group">
+        <h3>Panel Uploads</h3>
+        <label for="patch1Upload" class="button">Panel 1</label>
+        <input type="file" id="patch1Upload" accept="image/*" />
+        <label for="patch2Upload" class="button">Panel 2</label>
+        <input type="file" id="patch2Upload" accept="image/*" />
+        <label for="patch3Upload" class="button">Panel 3</label>
+        <input type="file" id="patch3Upload" accept="image/*" />
+        <label for="patch4Upload" class="button">Panel 4</label>
+        <input type="file" id="patch4Upload" accept="image/*" />
+        <button id="clear-button">Clear All</button>
+      </div>
+      <!-- Ball Wrap: Single Image for Entire Ball -->
+      <div class="control-group" id="ballwrap-group">
+        <h3>Ball Wrap</h3>
+        <label for="ballWrapUpload" class="button">Upload Ball Wrap</label>
+        <input type="file" id="ballWrapUpload" accept="image/*" />
+        <button id="clearBallWrap">Clear Ball Wrap</button>
+      </div>
+      <!-- Decals: Single Upload for Both Sides -->
+      <div class="control-group" id="decal-group">
+        <h3>Decals</h3>
+        <label for="decalUpload" class="button">Upload Decal</label>
+        <input type="file" id="decalUpload" accept="image/*" />
+        <label>Decal Max Size (units):</label>
+        <input type="number" id="decalMaxSize" value="0.8" step="0.1" />
+        <label>Decal Depth:</label>
+        <input type="number" id="decalDepth" value="1" step="0.1" />
+        <label>Decal Lateral Offset:</label>
+        <input type="number" id="decalLateralOffset" value="1" step="0.1" />
+        <button id="updateDecals">Update Decals</button>
+        <button id="clearDecal">Clear Decal</button>
+      </div>
+      <!-- Save View Button -->
+      <div class="control-group">
+        <h3>Save View</h3>
+        <button id="saveView">Save Current View as PNG</button>
+      </div>
+      <!-- Hidden extra uploads if needed -->
+      <input type="file" id="textureUpload" accept="image/*" />
+      <input type="file" id="laceSideUpload" accept="image/*" multiple />
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer">
+      © 2025 NXTPlay Worldwide Pty Ltd | All Rights Reserved
+    </footer>
+    
+    <!-- Include Three.js, OrbitControls, DecalGeometry, ParametricGeometry -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/geometries/DecalGeometry.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/geometries/ParametricGeometry.js"></script>
+    
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        // Helper: Safe event listener attachment.
+        function safeAddEventListener(id, event, fn) {
+          const el = document.getElementById(id);
+          if (el) el.addEventListener(event, fn);
+        }
+        
+        // Toggle Controls Panel.
+        const toggleBtn = document.getElementById("toggle-controls");
+        const controlsPanel = document.getElementById("controls-panel");
+        let controlsVisible = true;
+        safeAddEventListener("toggle-controls", "click", () => {
+          controlsVisible = !controlsVisible;
+          controlsPanel.style.display = controlsVisible ? "flex" : "none";
+          toggleBtn.textContent = controlsVisible ? "Hide Controls" : "Show Controls";
+        });
+        
+        // Scene Setup.
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf0f0f0);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 5);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        // Enable shadow mapping
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        const orbit = new THREE.OrbitControls(camera, renderer.domElement);
+        orbit.enableDamping = true;
+        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambient);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 5, 5);
+        // Configure directional light to cast shadows
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 500;
+        dirLight.shadow.camera.left = -5;
+        dirLight.shadow.camera.right = 5;
+        dirLight.shadow.camera.top = 5;
+        dirLight.shadow.camera.bottom = -5;
+        scene.add(dirLight);
+        
+        // Create a ground plane to receive shadows.
+        const groundGeo = new THREE.PlaneGeometry(10, 10);
+        const groundMat = new THREE.ShadowMaterial({ opacity: 0.5 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -1; // Adjust based on your ball’s position
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // Global Variables.
+        let leftDecalData = null;
+        let panelMaterials = [], panelMeshes = [];
+        let dorsalSeamCurve = null;
+        let originalPositions = null;
+        
+        // --- Fixed Dimensions for the Ball.
+        const ballWidth = 1.5;
+        const ballHeight = 0.9;
+        
+        // --- valveParams.
+        const valveParams = { radius: 0.03, height: 0.02, extrusion: 0.02 };
+        
+        // --- Helper Function: ellipsoidNormal.
+        function ellipsoidNormal(p) {
+          const nx = p.x / (ballWidth * ballWidth);
+          const ny = p.y / (ballHeight * ballHeight);
+          const nz = p.z / (ballHeight * ballHeight);
+          return new THREE.Vector3(nx, ny, nz).normalize();
+        }
+        
+        // --- Helper Function: updateCylindricalUV_X.
+        function updateCylindricalUV_X(geometry) {
+          const uvAttr = geometry.attributes.uv;
+          const posAttr = geometry.attributes.position;
+          for (let i = 0; i < posAttr.count; i++) {
+            const x = posAttr.getX(i);
+            const y = posAttr.getY(i);
+            const z = posAttr.getZ(i);
+            const sy = y / ballHeight;
+            const sz = z / ballHeight;
+            const angle = Math.atan2(sz, sy);
+            const u = (angle + Math.PI) / (2 * Math.PI);
+            const v = ((x / ballWidth) + 1) / 2;
+            uvAttr.setXY(i, u, v);
+          }
+          uvAttr.needsUpdate = true;
+        }
+        
+        // --- Create 4 Panels using ParametricGeometry.
+        const resolutionU = 32, resolutionV = 32;
+        function ballPatch(u, v, target, phiStart, phiEnd) {
+          const uMapped = 0.001 + 0.998 * u;
+          const theta = Math.PI * uMapped;
+          const cosTheta = Math.cos(theta);
+          const sinTheta = Math.sin(theta);
+          const x = ballWidth * Math.sign(cosTheta) * Math.pow(Math.abs(cosTheta), 1.0);
+          const R = Math.pow(sinTheta, 1.0);
+          const phi = phiStart + (phiEnd - phiStart) * v;
+          const y = ballHeight * R * Math.cos(phi);
+          const z = ballHeight * R * Math.sin(phi);
+          target.set(x, y, z);
+        }
+        function createPanelGeom(phiStart, phiEnd) {
+          return new THREE.ParametricGeometry((u, v, target) => {
+            ballPatch(u, v, target, phiStart, phiEnd);
+          }, resolutionU, resolutionV);
+        }
+        function createDefaultMat() {
+          return new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+        }
+        function create4Panels() {
+          panelMeshes.forEach(m => scene.remove(m));
+          panelMeshes = [];
+          panelMaterials = [];
+          let geom = createPanelGeom(0, Math.PI / 2);
+          let mat = createDefaultMat();
+          let mesh = new THREE.Mesh(geom, mat);
+          // Enable shadow casting for the panel.
+          mesh.castShadow = true;
+          scene.add(mesh);
+          panelMaterials.push(mat);
+          panelMeshes.push(mesh);
+          
+          geom = createPanelGeom(Math.PI / 2, Math.PI);
+          mat = createDefaultMat();
+          mesh = new THREE.Mesh(geom, mat);
+          mesh.castShadow = true;
+          scene.add(mesh);
+          panelMaterials.push(mat);
+          panelMeshes.push(mesh);
+          
+          geom = createPanelGeom(Math.PI, 3 * Math.PI / 2);
+          mat = createDefaultMat();
+          mesh = new THREE.Mesh(geom, mat);
+          mesh.castShadow = true;
+          scene.add(mesh);
+          panelMaterials.push(mat);
+          panelMeshes.push(mesh);
+          
+          geom = createPanelGeom(3 * Math.PI / 2, 2 * Math.PI);
+          mat = createDefaultMat();
+          mesh = new THREE.Mesh(geom, mat);
+          mesh.castShadow = true;
+          scene.add(mesh);
+          panelMaterials.push(mat);
+          panelMeshes.push(mesh);
+        }
+        create4Panels();
+        
+        function updatePanelColors() {
+          const hex = document.getElementById("colorInput").value.trim();
+          if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex)) {
+            panelMaterials.forEach(mat => {
+              if (!mat.map) {
+                mat.color.set(hex);
+                mat.needsUpdate = true;
+              }
+            });
+          }
+        }
+        safeAddEventListener("colorInput", "input", updatePanelColors);
+        safeAddEventListener("colorInput", "change", updatePanelColors);
+        
+        // --- Create Hidden Ball Geometry for Decal Projection.
+        function createBallGeometry() {
+          const geo = new THREE.SphereGeometry(1, 64, 64);
+          geo.scale(ballWidth, ballHeight, ballHeight);
+          originalPositions = geo.attributes.position.array.slice();
+          return geo;
+        }
+        const footballGeometry = createBallGeometry();
+        
+        // --- Dorsal Seam & Laces.
+        function updateDorsalSeamCurve() {
+          const seamCount = 50;
+          const pts = [];
+          for (let i = 0; i <= seamCount; i++) {
+            const t = i / seamCount;
+            const theta = Math.PI * t;
+            const cosTheta = Math.cos(theta);
+            const sinTheta = Math.sin(theta);
+            const x = ballWidth * Math.sign(cosTheta) * Math.pow(Math.abs(cosTheta), 1.0);
+            const R = Math.pow(sinTheta, 1.0);
+            const y = ballHeight * R;
+            pts.push(new THREE.Vector3(x, y, 0));
+          }
+          dorsalSeamCurve = new THREE.CatmullRomCurve3(pts);
+        }
+        updateDorsalSeamCurve();
+        
+        // --- Lacing Materials and Functions.
+        const laceMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const eyeletMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+        const valveMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        let laceMeshes = [];
+        let valveMesh = null;
+        function clearLaces() {
+          laceMeshes.forEach(m => scene.remove(m));
+          laceMeshes = [];
+        }
+        function clearValve() {
+          if (valveMesh) { scene.remove(valveMesh); valveMesh = null; }
+        }
+        function updateLaces() {
+          clearLaces();
+          clearValve();
+          if (!dorsalSeamCurve) return;
+          for (let i = 0; i < 6; i++) {
+            const t = 0.5 + (i - 2.5) * 0.03;
+            const tC = Math.min(Math.max(t, 0.05), 0.95);
+            const p = dorsalSeamCurve.getPoint(tC);
+            const tangent = dorsalSeamCurve.getTangent(tC);
+            const n = ellipsoidNormal(p);
+            const laceDir = new THREE.Vector3().crossVectors(n, tangent).normalize();
+            const halfLen = 0.25 / 2;
+            const start = p.clone().add(laceDir.clone().multiplyScalar(-halfLen));
+            const end = p.clone().add(laceDir.clone().multiplyScalar(halfLen));
+            const mid = start.clone().add(end).multiplyScalar(0.5);
+            const radial = mid.clone().normalize();
+            const chord = end.clone().sub(start).normalize();
+            const archDir = new THREE.Vector3().crossVectors(chord, new THREE.Vector3().crossVectors(chord, radial)).normalize();
+            mid.add(archDir.multiplyScalar(-0.03));
+            const laceCurve = new THREE.CatmullRomCurve3([start, mid, end]);
+            const laceGeo = new THREE.TubeGeometry(laceCurve, 40, 0.026, 32, false);
+            const laceMesh = new THREE.Mesh(laceGeo, laceMaterial);
+            laceMesh.renderOrder = 11;
+            laceMesh.castShadow = true;
+            scene.add(laceMesh);
+            laceMeshes.push(laceMesh);
+            // Eyelets.
+            const eyeletGeom = new THREE.TorusGeometry(0.001, 0.025, 16, 32);
+            const startEyelet = new THREE.Mesh(eyeletGeom, eyeletMaterial);
+            startEyelet.position.copy(start);
+            startEyelet.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ellipsoidNormal(start));
+            startEyelet.renderOrder = 12;
+            startEyelet.castShadow = true;
+            scene.add(startEyelet);
+            laceMeshes.push(startEyelet);
+            const endEyelet = new THREE.Mesh(eyeletGeom.clone(), eyeletMaterial);
+            endEyelet.position.copy(end);
+            endEyelet.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ellipsoidNormal(end));
+            endEyelet.renderOrder = 12;
+            endEyelet.castShadow = true;
+            scene.add(endEyelet);
+            laceMeshes.push(endEyelet);
+          }
+          // Valve.
+          const p_valve = dorsalSeamCurve.getPoint(0.5);
+          const n_valve = ellipsoidNormal(p_valve);
+          const valvePos = p_valve.clone().add(n_valve.clone().multiplyScalar(valveParams.extrusion));
+          const valveGeo = new THREE.CylinderGeometry(valveParams.radius, valveParams.radius, valveParams.height, 32);
+          valveMesh = new THREE.Mesh(valveGeo, valveMaterial);
+          valveMesh.position.copy(valvePos);
+          valveMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n_valve);
+          valveMesh.renderOrder = 12;
+          valveMesh.castShadow = true;
+          scene.add(valveMesh);
+        }
+        updateLaces();
+        
+        // --- Decals.
+        let laceSideLeftMesh = null, laceSideRightMesh = null;
+        function applyDecals() {
+          if (laceSideLeftMesh) { scene.remove(laceSideLeftMesh); laceSideLeftMesh = null; }
+          if (laceSideRightMesh) { scene.remove(laceSideRightMesh); laceSideRightMesh = null; }
+          if (!leftDecalData) {
+            console.log("Decal image not set.");
+            return;
+          }
+          const maxSize = parseFloat(document.getElementById("decalMaxSize").value) || 0.8;
+          const decalDepth = parseFloat(document.getElementById("decalDepth").value) || 1;
+          const lateralOffset = parseFloat(document.getElementById("decalLateralOffset").value) || 1;
+          
+          const seamPts = [
+            new THREE.Vector3(-ballWidth, 0, 0),
+            new THREE.Vector3(0, ballHeight, 0),
+            new THREE.Vector3(ballWidth, 0, 0)
+          ];
+          const seamCurve = new THREE.CatmullRomCurve3(seamPts);
+          const center = seamCurve.getPoint(0.5);
+          const tangent = seamCurve.getTangent(0.5);
+          const normalAtCenter = ellipsoidNormal(center);
+          const lateralVec = new THREE.Vector3().crossVectors(normalAtCenter, tangent).normalize();
+          const leftPosCandidate = center.clone().sub(lateralVec.clone().multiplyScalar(lateralOffset));
+          const rightPosCandidate = center.clone().add(lateralVec.clone().multiplyScalar(lateralOffset));
+          function projectEllip(q) {
+            const sx = q.x / ballWidth, sy = q.y / ballHeight, sz = q.z / ballHeight;
+            const len = Math.sqrt(sx*sx + sy*sy + sz*sz);
+            if(len < 1e-6) return new THREE.Vector3(0,0,0);
+            return new THREE.Vector3((sx/len)*ballWidth, (sy/len)*ballHeight, (sz/len)*ballHeight);
+          }
+          const leftPos = projectEllip(leftPosCandidate);
+          const rightPos = projectEllip(rightPosCandidate);
+          
+          const leftObj = new THREE.Object3D();
+          leftObj.position.copy(leftPos);
+          leftObj.lookAt(leftPos.clone().add(leftPos.clone().normalize()));
+          const leftQuat = leftObj.quaternion.clone();
+          
+          const rightObj = new THREE.Object3D();
+          rightObj.position.copy(rightPos);
+          rightObj.lookAt(rightPos.clone().add(rightPos.clone().normalize()));
+          const rightQuat = rightObj.quaternion.clone();
+          
+          const leftImg = leftDecalData.img;
+          const leftScale = maxSize / Math.max(leftImg.naturalWidth, leftImg.naturalHeight);
+          let leftDecalWidth = leftImg.naturalWidth * leftScale;
+          let leftDecalHeight = leftImg.naturalHeight * leftScale;
+          const leftDecalSize = new THREE.Vector3(leftDecalWidth, leftDecalHeight, decalDepth);
+          
+          let rightDecalWidth = leftImg.naturalWidth * leftScale;
+          let rightDecalHeight = leftImg.naturalHeight * leftScale;
+          rightDecalWidth = -rightDecalWidth;
+          const rightDecalSize = new THREE.Vector3(rightDecalWidth, rightDecalHeight, decalDepth);
+          
+          const targetMesh = new THREE.Mesh(createBallGeometry(), new THREE.MeshBasicMaterial({ visible: false }));
+          scene.add(targetMesh);
+          
+          const leftDecalGeom = new THREE.DecalGeometry(targetMesh, leftPos, leftQuat, leftDecalSize);
+          const rightDecalGeom = new THREE.DecalGeometry(targetMesh, rightPos, rightQuat, rightDecalSize);
+          
+          const decalMat = new THREE.MeshStandardMaterial({
+            map: leftDecalData.texture,
+            transparent: true,
+            depthTest: true,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -4,
+            side: THREE.DoubleSide
+          });
+          laceSideLeftMesh = new THREE.Mesh(leftDecalGeom, decalMat);
+          laceSideRightMesh = new THREE.Mesh(rightDecalGeom, decalMat);
+          laceSideLeftMesh.renderOrder = 50;
+          laceSideRightMesh.renderOrder = 50;
+          laceSideLeftMesh.castShadow = true;
+          laceSideRightMesh.castShadow = true;
+          scene.add(laceSideLeftMesh);
+          scene.add(laceSideRightMesh);
+          
+          scene.remove(targetMesh);
+        }
+        safeAddEventListener("decalUpload", "change", function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            const img = new Image();
+            img.src = evt.target.result;
+            img.onload = function() {
+              const tex = new THREE.Texture(img);
+              tex.needsUpdate = true;
+              leftDecalData = { texture: tex, img: img };
+              applyDecals();
+            };
+          };
+          reader.readAsDataURL(file);
+          e.target.value = "";
+        });
+        safeAddEventListener("updateDecals", "click", function() {
+          applyDecals();
+        });
+        
+        safeAddEventListener("clearDecal", "click", function() {
+          if (laceSideLeftMesh) { scene.remove(laceSideLeftMesh); laceSideLeftMesh = null; }
+          if (laceSideRightMesh) { scene.remove(laceSideRightMesh); laceSideRightMesh = null; }
+          leftDecalData = null;
+        });
+        
+        safeAddEventListener("clearColor", "click", function() {
+          const colorInput = document.getElementById("colorInput");
+          colorInput.value = "#ffffff";
+          updatePanelColors();
+        });
+        
+        safeAddEventListener("clear-button", "click", function() {
+          panelMaterials.forEach(mat => {
+            if (mat.map) {
+              mat.map.dispose();
+              mat.map = null;
+            }
+            mat.color.set("#ffffff");
+            mat.needsUpdate = true;
+          });
+          if (laceSideLeftMesh) { scene.remove(laceSideLeftMesh); laceSideLeftMesh = null; }
+          if (laceSideRightMesh) { scene.remove(laceSideRightMesh); laceSideRightMesh = null; }
+          leftDecalData = null;
+          const wrapInput = document.getElementById("ballWrapUpload");
+          if (wrapInput) wrapInput.value = "";
+          document.getElementById("patch1Upload").value = "";
+          document.getElementById("patch2Upload").value = "";
+          document.getElementById("patch3Upload").value = "";
+          document.getElementById("patch4Upload").value = "";
+        });
+        
+        safeAddEventListener("ballWrapUpload", "change", function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            const img = new Image();
+            img.src = evt.target.result;
+            img.onload = function() {
+              const tex = new THREE.Texture(img);
+              tex.needsUpdate = true;
+              panelMaterials.forEach(mat => {
+                mat.map = tex;
+                mat.needsUpdate = true;
+              });
+              panelMeshes.forEach(mesh => {
+                updateCylindricalUV_X(mesh.geometry);
+              });
+            };
+          };
+          reader.readAsDataURL(file);
+        });
+        safeAddEventListener("clearBallWrap", "click", function() {
+          panelMaterials.forEach(mat => {
+            if (mat.map) { mat.map.dispose(); mat.map = null; }
+            const hex = document.getElementById("colorInput").value.trim();
+            if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex)) {
+              mat.color.set(hex);
+            } else {
+              mat.color.set("#ffffff");
+            }
+            mat.needsUpdate = true;
+          });
+          const wrapInput = document.getElementById("ballWrapUpload");
+          if (wrapInput) wrapInput.value = "";
+        });
+        
+        safeAddEventListener("textureUpload", "change", function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            const img = new Image();
+            img.src = evt.target.result;
+            img.onload = function() {
+              const tex = new THREE.Texture(img);
+              tex.needsUpdate = true;
+              panelMaterials.forEach(mat => {
+                if (!mat.map) {
+                  mat.map = tex;
+                  mat.needsUpdate = true;
+                }
+              });
+              if (panelMeshes.length > 0) {
+                updateCylindricalUV_X(panelMeshes[0].geometry);
+              }
+            };
+          };
+          reader.readAsDataURL(file);
+        });
+        
+        function setupPanelUpload(panelIndex, elementId) {
+          safeAddEventListener(elementId, "change", function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+              const img = new Image();
+              img.src = evt.target.result;
+              img.onload = function() {
+                const tex = new THREE.Texture(img);
+                tex.needsUpdate = true;
+                panelMaterials[panelIndex].map = tex;
+                panelMaterials[panelIndex].needsUpdate = true;
+              };
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+        setupPanelUpload(0, "patch1Upload");
+        setupPanelUpload(1, "patch2Upload");
+        setupPanelUpload(2, "patch3Upload");
+        setupPanelUpload(3, "patch4Upload");
+        
+        safeAddEventListener("saveView", "click", function() {
+          renderer.render(scene, camera);
+          const dataURL = renderer.domElement.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.href = dataURL;
+          link.download = "screenshot.png";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        });
+        
+        function animate() {
+          requestAnimationFrame(animate);
+          orbit.update();
+          renderer.render(scene, camera);
+        }
+        animate();
+        
+        window.addEventListener("resize", function() {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+      });
+    </script>
+  </body>
+</html>
