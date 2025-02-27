@@ -242,36 +242,24 @@
         camera.position.set(0, 0, 5);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        // Enable shadow mapping
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
-        
         const orbit = new THREE.OrbitControls(camera, renderer.domElement);
         orbit.enableDamping = true;
         const ambient = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambient);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(5, 5, 5);
-        // Configure directional light to cast shadows
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
-        dirLight.shadow.camera.near = 0.5;
-        dirLight.shadow.camera.far = 500;
-        dirLight.shadow.camera.left = -5;
-        dirLight.shadow.camera.right = 5;
-        dirLight.shadow.camera.top = 5;
-        dirLight.shadow.camera.bottom = -5;
-        scene.add(dirLight);
         
-        // Create a ground plane to receive shadows.
-        const groundGeo = new THREE.PlaneGeometry(10, 10);
-        const groundMat = new THREE.ShadowMaterial({ opacity: 0.5 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.y = -1; // Adjust based on your ball’s position
-        ground.receiveShadow = true;
-        scene.add(ground);
+        // Instead of a fixed ground receiving a static shadow, we create a dynamic drop-shadow sprite.
+        const shadowTexture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/shadow.png');
+        const shadowMaterial = new THREE.SpriteMaterial({ map: shadowTexture, color: 0x000000, transparent: true, opacity: 0.5 });
+        const ballShadow = new THREE.Sprite(shadowMaterial);
+        ballShadow.scale.set(2, 2, 1);
+        scene.add(ballShadow);
+        // Assume ground level is at y = -1 (adjust if needed)
+        
+        // Create a group for the ball so that the light and shadow can be relative to it.
+        const ballGroup = new THREE.Group();
+        scene.add(ballGroup);
         
         // Global Variables.
         let leftDecalData = null;
@@ -335,15 +323,17 @@
           return new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide });
         }
         function create4Panels() {
-          panelMeshes.forEach(m => scene.remove(m));
+          // Remove previous children from the ballGroup
+          while(ballGroup.children.length > 0) {
+            ballGroup.remove(ballGroup.children[0]);
+          }
           panelMeshes = [];
           panelMaterials = [];
           let geom = createPanelGeom(0, Math.PI / 2);
           let mat = createDefaultMat();
           let mesh = new THREE.Mesh(geom, mat);
-          // Enable shadow casting for the panel.
           mesh.castShadow = true;
-          scene.add(mesh);
+          ballGroup.add(mesh);
           panelMaterials.push(mat);
           panelMeshes.push(mesh);
           
@@ -351,7 +341,7 @@
           mat = createDefaultMat();
           mesh = new THREE.Mesh(geom, mat);
           mesh.castShadow = true;
-          scene.add(mesh);
+          ballGroup.add(mesh);
           panelMaterials.push(mat);
           panelMeshes.push(mesh);
           
@@ -359,7 +349,7 @@
           mat = createDefaultMat();
           mesh = new THREE.Mesh(geom, mat);
           mesh.castShadow = true;
-          scene.add(mesh);
+          ballGroup.add(mesh);
           panelMaterials.push(mat);
           panelMeshes.push(mesh);
           
@@ -367,7 +357,7 @@
           mat = createDefaultMat();
           mesh = new THREE.Mesh(geom, mat);
           mesh.castShadow = true;
-          scene.add(mesh);
+          ballGroup.add(mesh);
           panelMaterials.push(mat);
           panelMeshes.push(mesh);
         }
@@ -712,9 +702,15 @@
           document.body.removeChild(link);
         });
         
+        // Animation Loop.
         function animate() {
           requestAnimationFrame(animate);
+          // For demonstration, rotate the entire ball so that the shadow moves relative to the top light.
+          ballGroup.rotation.y += 0.01;
           orbit.update();
+          // Update the drop shadow's position.
+          // Here we assume the ball's base is at y = -1 (adjust if needed).
+          ballShadow.position.set(ballGroup.position.x, -1 + 0.01, ballGroup.position.z);
           renderer.render(scene, camera);
         }
         animate();
