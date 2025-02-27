@@ -159,7 +159,8 @@
       <!-- Ball Color -->
       <div class="control-group">
         <h3>Ball Color</h3>
-        <input type="text" id="colorInput" placeholder="Enter #hex color" value="#ffffff" />
+        <!-- Changed default ball color to red (#ff0000) for better contrast -->
+        <input type="text" id="colorInput" placeholder="Enter #hex color" value="#ff0000" />
         <button id="clearColor">Clear Color</button>
       </div>
       <!-- Panel Uploads -->
@@ -246,8 +247,9 @@
         });
         
         // Scene Setup.
+        // Changed background to a darker color for better contrast.
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf0f0f0);
+        scene.background = new THREE.Color(0x303030);
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
         camera.position.set(0, 0, 5);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -257,11 +259,9 @@
         const orbit = new THREE.OrbitControls(camera, renderer.domElement);
         orbit.enableDamping = true;
         
-        // Add an ambient light.
+        // Ambient and directional lights.
         const ambient = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambient);
-        
-        // Add a directional light (its position will be controlled).
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
         directionalLight.position.set(5, 5, 5);
         scene.add(directionalLight);
@@ -272,7 +272,7 @@
         const ballShadow = new THREE.Sprite(shadowMaterial);
         ballShadow.scale.set(2, 2, 1);
         scene.add(ballShadow);
-        const groundLevel = -1; // y coordinate of the ground
+        const groundLevel = -1;
         
         // Create a group for the ball.
         const ballGroup = new THREE.Group();
@@ -400,7 +400,7 @@
         }
         const footballGeometry = createBallGeometry();
         
-        // Dorsal seam & laces (not modified for brevity).
+        // Dorsal seam & laces (omitted for brevity; same as before).
         function updateDorsalSeamCurve() {
           const seamCount = 50;
           const pts = [];
@@ -488,7 +488,7 @@
         }
         updateLaces();
         
-        // Decals section (omitted for brevity; same as previous examples).
+        // Decals (same as previous examples)...
         let laceSideLeftMesh = null, laceSideRightMesh = null;
         function applyDecals() {
           if (laceSideLeftMesh) { scene.remove(laceSideLeftMesh); laceSideLeftMesh = null; }
@@ -596,7 +596,7 @@
         });
         safeAddEventListener("clearColor", "click", function() {
           const colorInput = document.getElementById("colorInput");
-          colorInput.value = "#ffffff";
+          colorInput.value = "#ff0000";
           updatePanelColors();
         });
         safeAddEventListener("clear-button", "click", function() {
@@ -605,7 +605,7 @@
               mat.map.dispose();
               mat.map = null;
             }
-            mat.color.set("#ffffff");
+            mat.color.set("#ff0000");
             mat.needsUpdate = true;
           });
           if (laceSideLeftMesh) { scene.remove(laceSideLeftMesh); laceSideLeftMesh = null; }
@@ -646,7 +646,7 @@
             if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex)) {
               mat.color.set(hex);
             } else {
-              mat.color.set("#ffffff");
+              mat.color.set("#ff0000");
             }
             mat.needsUpdate = true;
           });
@@ -721,7 +721,7 @@
         // Animation Loop.
         function animate() {
           requestAnimationFrame(animate);
-          // For demonstration, rotate the ball.
+          // Rotate the ball for demonstration.
           ballGroup.rotation.y += 0.01;
           orbit.update();
           
@@ -744,7 +744,7 @@
           
           renderer.render(scene, camera);
           
-          // Render axes widget.
+          // Render axes widget in lower-left corner.
           renderer.clearDepth();
           renderer.setViewport(10, 10, 150, 150);
           axesHelper.quaternion.copy(camera.quaternion);
