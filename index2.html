@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AFL Football Preview – Panels, Decals, Ball Wrap & CAD-like Axes</title>
+    <title>AFL Football Preview – Lighting Controls, Dynamic Drop Shadow & Axes Widget</title>
     <!-- Favicon using the logo image -->
     <link rel="icon" type="image/png" href="https://i.imgur.com/lIOr2wQ.png" />
     <!-- (Optional) dat.GUI can be loaded if needed -->
@@ -175,14 +175,14 @@
         <input type="file" id="patch4Upload" accept="image/*" />
         <button id="clear-button">Clear All</button>
       </div>
-      <!-- Ball Wrap: Single Image for Entire Ball -->
+      <!-- Ball Wrap -->
       <div class="control-group" id="ballwrap-group">
         <h3>Ball Wrap</h3>
         <label for="ballWrapUpload" class="button">Upload Ball Wrap</label>
         <input type="file" id="ballWrapUpload" accept="image/*" />
         <button id="clearBallWrap">Clear Ball Wrap</button>
       </div>
-      <!-- Decals: Single Upload for Both Sides -->
+      <!-- Decals -->
       <div class="control-group" id="decal-group">
         <h3>Decals</h3>
         <label for="decalUpload" class="button">Upload Decal</label>
@@ -196,7 +196,17 @@
         <button id="updateDecals">Update Decals</button>
         <button id="clearDecal">Clear Decal</button>
       </div>
-      <!-- Save View Button -->
+      <!-- Lighting Controls -->
+      <div class="control-group" id="lighting-group">
+        <h3>Lighting Controls</h3>
+        <label for="lightX">Light X:</label>
+        <input type="number" id="lightX" value="5" step="0.1" />
+        <label for="lightY">Light Y:</label>
+        <input type="number" id="lightY" value="5" step="0.1" />
+        <label for="lightZ">Light Z:</label>
+        <input type="number" id="lightZ" value="5" step="0.1" />
+      </div>
+      <!-- Save View -->
       <div class="control-group">
         <h3>Save View</h3>
         <button id="saveView">Save Current View as PNG</button>
@@ -246,18 +256,25 @@
         document.body.appendChild(renderer.domElement);
         const orbit = new THREE.OrbitControls(camera, renderer.domElement);
         orbit.enableDamping = true;
+        
+        // Add an ambient light.
         const ambient = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambient);
         
-        // Create a dynamic drop-shadow sprite that follows the ball.
+        // Add a directional light (its position will be controlled).
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 5, 5);
+        scene.add(directionalLight);
+        
+        // Create a dynamic drop-shadow sprite.
         const shadowTexture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/shadow.png');
         const shadowMaterial = new THREE.SpriteMaterial({ map: shadowTexture, color: 0x000000, transparent: true, opacity: 0.5 });
         const ballShadow = new THREE.Sprite(shadowMaterial);
         ballShadow.scale.set(2, 2, 1);
         scene.add(ballShadow);
-        // Assume ground level is at y = -1 (adjust if needed)
+        const groundLevel = -1; // y coordinate of the ground
         
-        // Create a group for the ball so that it can be rotated and its shadow updated.
+        // Create a group for the ball.
         const ballGroup = new THREE.Group();
         scene.add(ballGroup);
         
@@ -267,14 +284,12 @@
         let dorsalSeamCurve = null;
         let originalPositions = null;
         
-        // --- Fixed Dimensions for the Ball.
+        // Ball dimensions.
         const ballWidth = 1.5;
         const ballHeight = 0.9;
-        
-        // --- Valve Parameters.
         const valveParams = { radius: 0.03, height: 0.02, extrusion: 0.02 };
         
-        // --- Helper Function: ellipsoidNormal.
+        // Helper: Calculate normal on ellipsoid.
         function ellipsoidNormal(p) {
           const nx = p.x / (ballWidth * ballWidth);
           const ny = p.y / (ballHeight * ballHeight);
@@ -282,7 +297,7 @@
           return new THREE.Vector3(nx, ny, nz).normalize();
         }
         
-        // --- Helper Function: updateCylindricalUV_X.
+        // Helper: Update cylindrical UV mapping.
         function updateCylindricalUV_X(geometry) {
           const uvAttr = geometry.attributes.uv;
           const posAttr = geometry.attributes.position;
@@ -300,7 +315,7 @@
           uvAttr.needsUpdate = true;
         }
         
-        // --- Create 4 Panels using ParametricGeometry.
+        // Create 4 panels via ParametricGeometry.
         const resolutionU = 32, resolutionV = 32;
         function ballPatch(u, v, target, phiStart, phiEnd) {
           const uMapped = 0.001 + 0.998 * u;
@@ -376,7 +391,7 @@
         safeAddEventListener("colorInput", "input", updatePanelColors);
         safeAddEventListener("colorInput", "change", updatePanelColors);
         
-        // --- Create Hidden Ball Geometry for Decal Projection.
+        // Hidden ball geometry for decal projection.
         function createBallGeometry() {
           const geo = new THREE.SphereGeometry(1, 64, 64);
           geo.scale(ballWidth, ballHeight, ballHeight);
@@ -385,7 +400,7 @@
         }
         const footballGeometry = createBallGeometry();
         
-        // --- Dorsal Seam & Laces.
+        // Dorsal seam & laces (not modified for brevity).
         function updateDorsalSeamCurve() {
           const seamCount = 50;
           const pts = [];
@@ -403,7 +418,7 @@
         }
         updateDorsalSeamCurve();
         
-        // --- Lacing Materials and Functions.
+        // Lacing functions...
         const laceMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
         const eyeletMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
         const valveMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
@@ -473,7 +488,7 @@
         }
         updateLaces();
         
-        // --- Decals.
+        // Decals section (omitted for brevity; same as previous examples).
         let laceSideLeftMesh = null, laceSideRightMesh = null;
         function applyDecals() {
           if (laceSideLeftMesh) { scene.remove(laceSideLeftMesh); laceSideLeftMesh = null; }
@@ -574,19 +589,16 @@
         safeAddEventListener("updateDecals", "click", function() {
           applyDecals();
         });
-        
         safeAddEventListener("clearDecal", "click", function() {
           if (laceSideLeftMesh) { scene.remove(laceSideLeftMesh); laceSideLeftMesh = null; }
           if (laceSideRightMesh) { scene.remove(laceSideRightMesh); laceSideRightMesh = null; }
           leftDecalData = null;
         });
-        
         safeAddEventListener("clearColor", "click", function() {
           const colorInput = document.getElementById("colorInput");
           colorInput.value = "#ffffff";
           updatePanelColors();
         });
-        
         safeAddEventListener("clear-button", "click", function() {
           panelMaterials.forEach(mat => {
             if (mat.map) {
@@ -606,7 +618,6 @@
           document.getElementById("patch3Upload").value = "";
           document.getElementById("patch4Upload").value = "";
         });
-        
         safeAddEventListener("ballWrapUpload", "change", function(e) {
           const file = e.target.files[0];
           if (!file) return;
@@ -642,7 +653,6 @@
           const wrapInput = document.getElementById("ballWrapUpload");
           if (wrapInput) wrapInput.value = "";
         });
-        
         safeAddEventListener("textureUpload", "change", function(e) {
           const file = e.target.files[0];
           if (!file) return;
@@ -666,7 +676,6 @@
           };
           reader.readAsDataURL(file);
         });
-        
         function setupPanelUpload(panelIndex, elementId) {
           safeAddEventListener(elementId, "change", function(e) {
             const file = e.target.files[0];
@@ -689,7 +698,6 @@
         setupPanelUpload(1, "patch2Upload");
         setupPanelUpload(2, "patch3Upload");
         setupPanelUpload(3, "patch4Upload");
-        
         safeAddEventListener("saveView", "click", function() {
           renderer.render(scene, camera);
           const dataURL = renderer.domElement.toDataURL("image/png");
@@ -701,12 +709,10 @@
           document.body.removeChild(link);
         });
         
-        // --- Axes Widget Setup (like a CAD program reference).
-        // Create a separate scene for the axes indicator.
+        // --- Axes Widget Setup.
         const widgetScene = new THREE.Scene();
-        const axesHelper = new THREE.AxesHelper(0.5); // adjust size as needed
+        const axesHelper = new THREE.AxesHelper(0.5);
         widgetScene.add(axesHelper);
-        // Create a simple camera for the widget.
         const widgetCamera = new THREE.PerspectiveCamera(50, 1, 1, 1000);
         widgetCamera.up.copy(camera.up);
         widgetCamera.position.set(0, 0, 2);
@@ -715,27 +721,40 @@
         // Animation Loop.
         function animate() {
           requestAnimationFrame(animate);
-          // (For demonstration, rotate the ball.)
+          // For demonstration, rotate the ball.
           ballGroup.rotation.y += 0.01;
           orbit.update();
-          renderer.render(scene, camera);
-          // Update drop-shadow to follow the ball at ground level (assumed at y=-1).
-          ballShadow.position.set(ballGroup.position.x, -1 + 0.01, ballGroup.position.z);
           
-          // Render the axes widget in the lower-left corner.
-          renderer.clearDepth(); // Clear depth buffer so widget is drawn on top.
-          // Set viewport (x, y, width, height) in pixels.
+          // Update directional light position from controls.
+          const lightX = parseFloat(document.getElementById("lightX").value);
+          const lightY = parseFloat(document.getElementById("lightY").value);
+          const lightZ = parseFloat(document.getElementById("lightZ").value);
+          directionalLight.position.set(lightX, lightY, lightZ);
+          
+          // Compute drop shadow position by projecting ballGroup.position onto the ground along the light's direction.
+          const ballPos = ballGroup.position.clone();
+          const lightDir = new THREE.Vector3().subVectors(directionalLight.position, ballPos).normalize();
+          if (Math.abs(lightDir.y) > 0.001) {
+            const t = (ballPos.y - groundLevel) / lightDir.y;
+            const shadowPos = ballPos.clone().sub(lightDir.multiplyScalar(t));
+            ballShadow.position.copy(shadowPos);
+          } else {
+            ballShadow.position.set(ballPos.x, groundLevel, ballPos.z);
+          }
+          
+          renderer.render(scene, camera);
+          
+          // Render axes widget.
+          renderer.clearDepth();
           renderer.setViewport(10, 10, 150, 150);
-          // Update axes helper to reflect current camera rotation.
           axesHelper.quaternion.copy(camera.quaternion);
           renderer.render(widgetScene, widgetCamera);
-          // Restore full viewport.
           renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
         }
         animate();
         
         window.addEventListener("resize", function() {
-          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.aspect = window.innerWidth/window.innerHeight;
           camera.updateProjectionMatrix();
           renderer.setSize(window.innerWidth, window.innerHeight);
         });
