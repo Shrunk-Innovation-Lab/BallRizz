@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEI Training Quiz</title>
+    <link rel="icon" type="image/png" href="https://i.imgur.com/dZR7M8C.png">
+    <link rel="shortcut icon" type="image/png" href="https://i.imgur.com/dZR7M8C.png">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #3b82f6;
+            --primary-lighter: #60a5fa;
+            --background: #f8fafc;
+            --text: #0f172a;
+            --correct: #10b981;
+            --incorrect: #ef4444;
+            --white: #ffffff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+        
+        .quiz-container {
+            background-color: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .logo {
+            max-width: 200px;
+            margin: 0 auto 16px;
+            display: block;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 24px;
+            padding: 16px;
+            color: var(--text);
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        h1 {
+            color: var(--primary-dark);
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .progress-container {
+            height: 8px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            margin: 16px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .question-container {
+            display: none;
+        }
+        
+        .question-container.active {
+            display: block;
+        }
+        
+        .question {
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 16px;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .option {
+            background-color: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .option:hover {
+            border-color: var(--primary-light);
+            background-color: #f0f7ff;
+        }
+        
+        .option.selected {
+            border-color: var(--primary);
+            background-color: #eff6ff;
+        }
+        
+        .option.correct {
+            border-color: var(--correct);
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+        
+        .option.incorrect {
+            border-color: var(--incorrect);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+        
+        .feedback {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 24px;
+            display: none;
+        }
+        
+        .feedback.correct {
+            border-left-color: var(--correct);
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+        
+        .feedback.incorrect {
+            border-left-color: var(--incorrect);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+        
+        .feedback-icon {
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .feedback-text {
+            font-size: 15px;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+        
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        button:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+        
+        button.secondary {
+            background-color: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        
+        button.secondary:hover {
+            background-color: #eff6ff;
+        }
+        
+        .result-container {
+            display: none;
+            text-align: center;
+        }
+        
+        .result-container.active {
+            display: block;
+        }
+        
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: var(--primary-dark);
+        }
+        
+        .result-message {
+            margin-bottom: 24px;
+        }
+        
+        .question-number {
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .start-container {
+            text-align: center;
+        }
+        
+        .start-container p {
+            margin-bottom: 24px;
+        }
+        
+        .start-button {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="https://i.imgur.com/iB983sa.png" alt="Shrunk Logo" class="logo">
+        <h1>DEI Training Quiz</h1>
+        <p>Test your knowledge on Diversity, Equity and Inclusion</p>
+    </div>
+
+    <div class="quiz-container">
+        <div class="progress-container">
+            <div class="progress-bar" id="progress"></div>
+        </div>
+
+        <div class="start-container" id="startContainer">
+            <p>This quiz contains 20 questions about Diversity, Equity, and Inclusion in the workplace. Test your knowledge and learn more about creating an inclusive environment.</p>
+            <button class="start-button" id="startButton">Start Quiz</button>
+        </div>
+
+        <div id="questionContainer" style="display: none;">
+            <div class="question-number" id="questionNumber">Question 1 of 20</div>
+            <div class="question" id="question"></div>
+            
+            <div class="options" id="options"></div>
+            
+            <div class="feedback" id="feedback">
+                <div class="feedback-text" id="feedbackText"></div>
+            </div>
+            
+            <div class="actions">
+                <button class="secondary" id="prevButton" disabled>Previous</button>
+                <button id="nextButton" disabled>Next</button>
+            </div>
+        </div>
+
+        <div class="result-container" id="resultContainer">
+            <div class="score" id="score"></div>
+            <div class="result-message" id="resultMessage"></div>
+            <button id="restartButton">Restart Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        // Quiz data
+        const quizData = [
+            {
+                question: "What does 'Equity' mean in the workplace?",
+                options: [
+                    "Hiring from different cultural backgrounds",
+                    "Removing barriers so everyone has access to the same opportunities",
+                    "Making sure everyone gets the same outcome",
+                    "Encouraging team lunches"
+                ],
+                correctAnswer: 1,
+                correctFeedback: "Equity supports each person's success by meeting individual needs and removing systemic barriers.",
+                incorrectFeedback: "Equity is not about giving everyone the same thing—it's about giving people what they need to thrive."
+            },
+            {
+                question: "Which is NOT an example of inclusion?",
+                options: [
+                    "Inviting everyone's input in meetings",
+                    "Assuming one person can represent an entire group",
+                    "Using pronouns in email signatures",
+                    "Providing accommodations for accessibility"
+                ],
+                correctAnswer: 1,
+                correctFeedback: "Inclusion honors individuality and avoids tokenism.",
+                incorrectFeedback: "Assuming one voice can speak for a whole group excludes others and adds pressure."
+            },
+            {
+                question: "Which of these is a microaggression?",
+                options: [
+                    "'Tell me more about your perspective.'",
+                    "'You don't look like an engineer.'",
+                    "'Let's use more inclusive language.'",
+                    "'I want to make sure everyone's heard.'"
+                ],
+                correctAnswer: 1,
+                correctFeedback: "This reinforces harmful stereotypes and undermines belonging.",
+                incorrectFeedback: "Microaggressions are subtle but harmful actions that make people feel excluded."
+            },
+            {
+                question: "What should you do if a teammate is interrupted repeatedly?",
+                options: [
+                    "Wait until the meeting ends to bring it up privately.",
+                    "Ignore it unless they mention it.",
+                    "Speak up or redirect attention to them.",
+                    "Make a joke to lighten the mood."
+                ],
+                correctAnswer: 2,
+                correctFeedback: "Being an ally means using your voice to create space for others.",
+                incorrectFeedback: "Speaking up in the moment helps prevent exclusion from becoming normalized."
+            },
+            {
+                question: "Inclusion is only HR's job. (True/False)",
+                options: [
+                    "True",
+                    "False"
+                ],
+                correctAnswer: 1,
+                correctFeedback: "Everyone shapes inclusion through daily actions.",
+                incorrectFeedback: "Inclusion is a shared responsibility, not just an HR initiative."
+            },
+            {
+                question: "What is unconscious bias?",
+                options: [
+                    "Deliberately excluding someone",
+                    "Being rude to someone because of their background",
+                    "Subconscious attitudes that affect our actions and decisions",
+                    "Ignoring workplace rules"
+                ],
+                correctAnswer: 2,
+                correctFeedback: "These biases influence decisions in subtle ways.",
+                incorrectFeedback: "Bias isn't always intentional—but it's always impactful."
+            },
+            {
+                question: "What promotes DEI in hiring?",
+                options: [
+                    "Gut feelings about candidates",
+                    "Referrals from friends",
+                    "Standardized interview questions",
+                    "Hiring based on culture fit only"
+                ],
+                correctAnswer: 2,
+                correctFeedback: "Structured interviews help reduce bias.",
+                incorrectFeedback: "Inconsistent interviews risk favoring certain backgrounds."
+            },
+            {
+                question: "Which action supports accessibility?",
+                options: [
+                    "Mandatory in-person events",
+                    "Providing captioned videos and assistive tech",
+                    "Expecting people to adapt on their own",
+                    "None of the above"
+                ],
+                correctAnswer: 1,
+                correctFeedback: "Accessibility ensures everyone can participate fully.",
+                incorrectFeedback: "Inclusion includes people with disabilities."
+            },
+            {
+                question: "What is intersectionality?",
+                options: [
+                    "Only focusing on gender issues",
+                    "Avoiding race-related topics in professional settings",
+                    "Overlapping identities creating unique experiences",
+                    "A legal term for workplace policy"
+                ],
+                correctAnswer: 2,
+                correctFeedback: "People are shaped by multiple aspects of identity.",
+                incorrectFeedback: "Ignoring intersectionality flattens diverse experiences."
+            },
+            {
+                question: "If told your comment was hurtful, what should you do?",
+                options: [
+                    "Defend yourself immediately",
+                    "Say they're being too sensitive",
+                    "Listen, apologize, and reflect",
+                    "Avoid the person going forward"
+                ],
+                correctAnswer: 2,
+                correctFeedback: "It's about being open and respectful.",
+                incorrectFeedback: "Defensiveness doesn't foster inclusion."
+            },
+            {
+                question: "Only people from minority backgrounds benefit from DEI. (True/False)",
+                options: [
+                    "True",
+                    "False"
+                ],
+                correctAnswer: 1,
+                correctFeedback: "Everyone thrives in inclusive cultures.",
+                incorrectFeedback: "Inclusion boosts creativity, belonging, and performance for all."
+            },
+            {
+                question: "How can you be inclusive in meetings?",
+                options: [
+                    "Ensure everyone has a chance to speak",
+                    "Let the loudest person lead",
+                    "Talk over quiet team members",
+                    "Avoid inviting differing opinions"
+                ],
+                correctAnswer: 0,
+                correctFeedback: "Inclusion means amplifying all voices.",
+                incorrectFeedback: "Dominating conversations excludes others."
+            },
+            {
+                question: "Which phrase is inclusive?",
+                options: [
+                    "'Let's hear from everyone.'",
+                    "'We don't have time for your story.'",
+                    "'This isn't about diversity.'",
+                    "'You're not like the others.'"
+                ],
+                correctAnswer: 0,
+                correctFeedback: "Inclusive language welcomes contributions.",
+                incorrectFeedback: "Language frames how people feel about participation."
+            },
+            {
+                question: "Which is a DEI best practice?",
+                options: [
+                    "Use anonymous surveys for feedback",
+                    "Ignore difficult conversations",
+                    "Promote based on seniority only",
+                    "Avoid asking for feedback"
+                ],
+                correctAnswer: 0,
+                correctFeedback: "Anonymity encourages honest input.",
+                incorrectFeedback: "You need psychological safety for real inclusion."
+            },
+            {
+                question: "What's the goal of inclusive language?",
+                options: [
+                    "To avoid bias and promote respect",
+                    "To sound politically correct",
+                    "To follow HR policy only",
+                    "To speak academically"
+                ],
+                correctAnswer: 0,
+                correctFeedback: "Words shape workplace culture.",
+                incorrectFeedback: "Inclusion begins with how we communicate."
+            },
+            {
+                question: "What is an Employee Resource Group (ERG)?",
+                options: [
+                    "A group supporting identity-based communities",
+                    "A place to vent complaints only",
+                    "A hiring tool",
+                    "A club for socializing"
+                ],
+                correctAnswer: 0,
+                correctFeedback: "ERGs foster belonging and empowerment.",
+                incorrectFeedback: "ERGs are not social clubs—they're strategic spaces."
+            },
+            {
+                question: "Which behavior is exclusive?",
+                options: [
+                    "Making jokes about someone's culture",
+                    "Acknowledging holidays from many backgrounds",
+                    "Listening to all ideas",
+                    "Rotating meeting facilitators"
+                ],
+                correctAnswer: 0,
+                correctFeedback: "Even light jokes can cause real harm.",
+                incorrectFeedback: "Humor should never come at someone's expense."
+            },
+            {
+                question: "How should feedback be delivered to support DEI?",
+                options: [
+                    "Respectfully and with empathy",
+                    "Without filter",
+                    "Only when performance is poor",
+                    "Through sarcasm"
+                ],
+                correctAnswer: 0,
+                correctFeedback: "Inclusion includes how we give feedback.",
+                incorrectFeedback: "Harsh or biased feedback damages trust."
+            },
+            {
+                question: "What helps identify bias in decision-making?",
+                options: [
+                    "Relying on gut feeling",
+                    "Reflecting before acting",
+                    "Asking only senior leaders",
+                    "Avoiding any change"
+                ],
+                correctAnswer: 1,
+                correctFeedback: "Reflection helps catch unintentional bias.",
+                incorrectFeedback: "Rushed decisions often rely on mental shortcuts."
+            },
+            {
+                question: "How can allies support DEI?",
+                options: [
+                    "Speak up, listen, and share the spotlight",
+                    "Stay quiet to avoid conflict",
+                    "Wait for others to lead",
+                    "Focus only on their own tasks"
+                ],
+                correctAnswer: 0,
+                correctFeedback: "Allyship is action.",
+                incorrectFeedback: "Passive support is not enough—take visible action."
+            }
+        ];
+
+        // Variables
+        let currentQuestion = 0;
+        let score = 0;
+        let userAnswers = new Array(quizData.length).fill(-1);
+        let hasAnswered = false;
+
+        // Elements
+        const startContainer = document.getElementById('startContainer');
+        const questionContainer = document.getElementById('questionContainer');
+        const resultContainer = document.getElementById('resultContainer');
+        const questionNumber = document.getElementById('questionNumber');
+        const questionElement = document.getElementById('question');
+        const optionsElement = document.getElementById('options');
+        const feedbackElement = document.getElementById('feedback');
+        const feedbackTextElement = document.getElementById('feedbackText');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const scoreElement = document.getElementById('score');
+        const resultMessageElement = document.getElementById('resultMessage');
+        const progressBar = document.getElementById('progress');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+
+        // Initialize quiz
+        startButton.addEventListener('click', startQuiz);
+        restartButton.addEventListener('click', restartQuiz);
+        prevButton.addEventListener('click', goToPreviousQuestion);
+        nextButton.addEventListener('click', goToNextQuestion);
+
+        function startQuiz() {
+            startContainer.style.display = 'none';
+            questionContainer.style.display = 'block';
+            resultContainer.classList.remove('active');
+            loadQuestion();
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            userAnswers = new Array(quizData.length).fill(-1);
+            resultContainer.classList.remove('active');
+            startQuiz();
+        }
+
+        function loadQuestion() {
+            hasAnswered = userAnswers[currentQuestion] !== -1;
+            
+            // Update question number and progress
+            questionNumber.textContent = `Question ${currentQuestion + 1} of ${quizData.length}`;
+            progressBar.style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+            
+            // Load question and options
+            const currentQuizData = quizData[currentQuestion];
+            questionElement.textContent = currentQuizData.question;
+            
+            // Clear previous options
+            optionsElement.innerHTML = '';
+            
+            // Add options
+            currentQuizData.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.classList.add('option');
+                optionElement.textContent = option;
+                
+                // If user has already answered this question
+                if (userAnswers[currentQuestion] === index) {
+                    optionElement.classList.add('selected');
+                    
+                    // Show if answer was correct or incorrect
+                    if (index === currentQuizData.correctAnswer) {
+                        optionElement.classList.add('correct');
+                    } else {
+                        optionElement.classList.add('incorrect');
+                    }
+                }
+                
+                // If user has answered, show correct answer
+                if (hasAnswered && index === currentQuizData.correctAnswer) {
+                    optionElement.classList.add('correct');
+                }
+                
+                optionElement.addEventListener('click', () => selectOption(index));
+                optionsElement.appendChild(optionElement);
+            });
+            
+            // Show feedback if user has answered
+            if (hasAnswered) {
+                feedbackElement.style.display = 'block';
+                if (userAnswers[currentQuestion] === currentQuizData.correctAnswer) {
+                    feedbackElement.className = 'feedback correct';
+                    feedbackTextElement.innerHTML = `<span class="feedback-icon">✓</span> ${currentQuizData.correctFeedback}`;
+                } else {
+                    feedbackElement.className = 'feedback incorrect';
+                    feedbackTextElement.innerHTML = `<span class="feedback-icon">✗</span> ${currentQuizData.incorrectFeedback}`;
+                }
+                nextButton.disabled = false;
+            } else {
+                feedbackElement.style.display = 'none';
+                nextButton.disabled = true;
+            }
+            
+            // Update button states
+            prevButton.disabled = currentQuestion === 0;
+            
+            // Change Next to Finish on last question
+            if (currentQuestion === quizData.length - 1) {
+                nextButton.textContent = 'Finish';
+            } else {
+                nextButton.textContent = 'Next';
+            }
+        }
+
+        function selectOption(index) {
+            // If already answered, don't allow changes
+            if (hasAnswered) return;
+            
+            const options = document.querySelectorAll('.option');
+            options.forEach(option => option.classList.remove('selected'));
+            options[index].classList.add('selected');
+            
+            userAnswers[currentQuestion] = index;
+            hasAnswered = true;
+            
+            // Show feedback
+            feedbackElement.style.display = 'block';
+            if (index === quizData[currentQuestion].correctAnswer) {
+                feedbackElement.className = 'feedback correct';
+                feedbackTextElement.innerHTML = `<span class="feedback-icon">✓</span> ${quizData[currentQuestion].correctFeedback}`;
+                options[index].classList.add('correct');
+                score++;
+            } else {
+                feedbackElement.className = 'feedback incorrect';
+                feedbackTextElement.innerHTML = `<span class="feedback-icon">✗</span> ${quizData[currentQuestion].incorrectFeedback}`;
+                options[index].classList.add('incorrect');
+                options[quizData[currentQuestion].correctAnswer].classList.add('correct');
+            }
+            
+            // Enable next button
+            nextButton.disabled = false;
+        }
+
+        function goToPreviousQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                loadQuestion();
+            }
+        }
+
+        function goToNextQuestion() {
+            if (currentQuestion < quizData.length - 1) {
+                currentQuestion++;
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            questionContainer.style.display = 'none';
+            resultContainer.classList.add('active');
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            scoreElement.textContent = `Your Score: ${score}/${quizData.length} (${percentage}%)`;
+            
+            // Result message based on score
+            let message = '';
+            if (percentage >= 90) {
+                message = 'Excellent! You have a strong understanding of DEI principles.';
+            } else if (percentage >= 70) {
+                message = 'Good job! You have a solid grasp of DEI concepts with some room for growth.';
+            } else if (percentage >= 50) {
+                message = 'You have a basic understanding of DEI. Consider revisiting some concepts.';
+            } else {
+                message = 'You might benefit from more learning about DEI principles and practices.';
+            }
+            
+            resultMessageElement.textContent = message;
+        }
+    </script>
+
+    <footer>
+        <p>©2025 | Wasted by Shrunk | All Rights Reserved</p>
+    </footer>
+</body>
+</html>
